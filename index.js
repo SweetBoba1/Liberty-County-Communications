@@ -1,3 +1,4 @@
+const { NumberValidator } = require('@sapphire/shapeshift');
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ChannelType, PermissionsBitField, InteractionType, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, AuditLogEvent, Collection, PermissionFlagsBits } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
@@ -44,27 +45,78 @@ client.on('interactionCreate', async interaction => {
         } else if (commandName === 'application') {
             if (interaction.options.getSubcommand() === 'approve') {
                 if (interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
+                    const channel = interaction.channel.name.split('-')[1];
+
+                    if (channel !== 'application') return interaction.reply({ content: 'You can only run this command in an application ticket', ephemeral: true });
+
                     const user = interaction.options.getUser('user');
-                    await interaction.reply({ content: `Once I\'m in the main server, I can send the user a message saying that they got accepted and I would give them their proper roles!\nIndividual Selected: ${user.tag}`})
+                    await interaction.reply({ content: `Once I\'m in the main server, I can send the user a message saying that they got accepted and I would give them their proper roles!\nIndividual Selected: ${user.tag}` })
                 } else {
                     const embed = new EmbedBuilder()
-                    .setColor('Red')
-                    .setDescription('❌ You don\'t have permission to use this command');
+                        .setColor('Red')
+                        .setDescription('❌ You don\'t have permission to use this command');
 
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
             } else if (interaction.options.getSubcommand() === 'deny') {
                 if (interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
                     const user = interaction.options.getUser('user');
-                    await interaction.reply({ content: `Once I\'m in the main server, I can send the user a message saying that they got denied!\nIndividual Selected: ${user.tag}`})
-                    // Run deny message
+                    await interaction.reply({ content: `Once I\'m in the main server, I can send the user a message saying that they got denied!\nIndividual Selected: ${user.tag}` })
                 } else {
                     const embed = new EmbedBuilder()
-                    .setColor('Red')
-                    .setDescription('❌ You don\'t have permission to use this command');
+                        .setColor('Red')
+                        .setDescription('❌ You don\'t have permission to use this command');
 
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
+            }
+        } else if (commandName === 'loa') {
+            if (interaction.member.roles.cache.get('1054395477333913710')) {
+                const length = interaction.options.getNumber('length');
+                const reason = interaction.options.getString('reason');
+
+                if (!Number(length)) return interaction.reply({ content: '`LENGTH` is not a valid number!', ephemeral: true });
+
+                const embed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setTitle('LOA Request')
+                    .setAuthor({ name: `${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                    .setDescription(`${interaction.user.tag} is requesting a leave of absence`)
+                    .addFields([
+                        {
+                            name: 'Length',
+                            value: `${length} days`,
+                            inline: true
+                        },
+                        {
+                            name: 'Reason',
+                            value: `${reason}`,
+                            inline: true
+                        }
+                    ])
+                    .setTimestamp();
+
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`approve_loa-${interaction.user.id}`)
+                            .setLabel('Approve')
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId(`deny_loa-${interaction.user.id}`)
+                            .setLabel('Deny')
+                            .setStyle(ButtonStyle.Danger)
+                    )
+
+                await interaction.guild.channels.cache.get('1054403294069530655').send({ embeds: [embed], components: [row] }).then(() => {
+                    interaction.reply({ embeds: [embed], ephemeral: true });
+                })
+            } else {
+                const embed = new EmbedBuilder()
+                        .setColor('Red')
+                        .setDescription('❌ You need to be a dispatcher to be able to use this command!');
+
+                    await interaction.reply({ embeds: [embed], ephemeral: true });
             }
         }
     } else if (interaction.isButton()) {
@@ -86,21 +138,23 @@ client.on('interactionCreate', async interaction => {
                 const row = new ActionRowBuilder()
                     .addComponents(
                         new ButtonBuilder()
-                            .setCustomId('close_ticket')
+                            .setCustomId(`close_ticket-${interaction.user.id}`)
                             .setLabel('Close')
                             .setStyle(ButtonStyle.Danger)
                     );
 
-                await channel.send({ content: 'PING ROLE(S) HERE', embeds: [embed], components: [row] }).then((message) => {
+                await channel.send({ content: 'PING ROLE(S) HERE', embeds: [embed], components: [row] }).then(async (message) => {
                     message.pin();
 
                     if (!interaction.member.roles.cache.get('1054191044356485170')) {
-                        interaction.member.roles.add('1054191044356485170');
+                        interaction.member.roles.add('1054191044356485170', 'Application Ticket Created');
+                        await interaction.reply({ content: `Successfully created an application ticket -> <#${channel.id}>`, ephemeral: true });
                     }
                 })
             })
-        } else if (interaction.customId === 'close_ticket') {
+        } else if (interaction.customId.startsWith('close_ticket')) {
             if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) return interaction.reply({ content: 'You can\'t close this ticket!' });
+            const applicant = interaction.customId.split('-')[1];
             let collection = new Collection();
             let channel_messages = await interaction.channel.messages.fetch({ limit: 100 });
             collection = collection.concat(channel_messages);
@@ -128,6 +182,11 @@ client.on('interactionCreate', async interaction => {
                         await interaction.editReply({ content: 'Successfully saved the ticket! Deleting this ticket in 5 seconds...' }).then(() => {
                             setTimeout(() => {
                                 interaction.channel.delete();
+                                let member = interaction.guild.members.cache.get(applicant);
+
+                                if (member) {
+                                    member.roles.remove('1054191044356485170', 'Application Ticket Closed')
+                                }
                             }, 5000);
                         })
                     })

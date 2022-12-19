@@ -5,6 +5,7 @@ const commands = [
     new SlashCommandBuilder().setName('ping').setDescription('Replies with bot statistics').setDMPermission(false),
     new SlashCommandBuilder().setName('developer').setDescription('Developer Options').addSubcommand(option => option.setName('resend_application_ticket').setDescription('Resends the application ticket maker to the channel this command was used in')),
     new SlashCommandBuilder().setName('application').setDescription('Application Options').setDMPermission(false).addSubcommand(option => option.setName('approve').setDescription('Approve an application').addUserOption(option => option.setName('user').setDescription('Please specity a user to accept').setRequired(true))).addSubcommand(option => option.setName('deny').setDescription('Denies an application').addUserOption(option => option.setName('user').setDescription('Please specify the user to deny').setRequired(true))),
+    new SlashCommandBuilder().setName('loa').setDescription('Request an LOA').setDMPermission(false).addNumberOption(option => option.setName('length').setDescription('Please enter the LOA length (days)').setMinValue(1).setRequired(true)).addStringOption(option => option.setName('reason').setDescription('Please enter the reason for the LOA').setMinLength(5).setRequired(true)),
 ]
     .map(command => command.toJSON());
 
