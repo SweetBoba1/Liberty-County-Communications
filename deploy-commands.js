@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, Routes, PermissionFlagsBits } = require('discord.js');
 const { REST } = require('@discordjs/rest');
+const config = require('./configuration.json');
 
 const commands = [
     new SlashCommandBuilder().setName('ping').setDescription('Replies with bot statistics').setDMPermission(false),
@@ -9,8 +10,8 @@ const commands = [
 ]
     .map(command => command.toJSON());
 
-const rest = new REST({ version: '10' }).setToken('MTA1NDE4MDQ1Mjc4Njc4MjIyOA.GTI78r.Z2Cm9WiZhSbIIsc5LZjK1QdE9IRnrxvAAw77-0');
+const rest = new REST({ version: '10' }).setToken(config.token);
 
-rest.put(Routes.applicationCommands('1054180452786782228'), { body: commands })
+rest.put(Routes.applicationCommands(config.id), { body: commands })
     .then(() => console.log('Successfully registered application commands.'))
     .catch(console.error);
