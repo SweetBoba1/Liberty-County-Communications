@@ -233,4 +233,4 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-client.login(config.app_token);
+client.login(`${config.app_token}`);

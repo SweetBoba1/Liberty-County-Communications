@@ -9,8 +9,8 @@ const commands = [
 ]
     .map(command => command.toJSON());
 
-const rest = new REST({ version: '10' }).setToken(config.app_token);
+const rest = new REST({ version: '10' }).setToken(`${config.app_token}`);
 
-rest.put(Routes.applicationCommands(config.app_id), { body: commands })
+rest.put(Routes.applicationCommands(`${config.app_id}`), { body: commands })
     .then(() => console.log('Successfully registered application commands.'))
     .catch(console.error);
