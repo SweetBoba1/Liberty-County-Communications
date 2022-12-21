@@ -13,3 +13,4 @@ const rest = new REST({ version: '10' }).setToken('MTA1NDE4MDQ1Mjc4Njc4MjIyOA.GT
 rest.put(Routes.applicationCommands('1054180452786782228'), { body: commands })
     .then(() => console.log('Successfully registered application commands.'))
     .catch(console.error);
+    
