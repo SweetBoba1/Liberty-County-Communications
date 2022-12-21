@@ -3,7 +3,6 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
 const fs = require('fs');
-const config = require('./configuration.json');
 
 client.once('ready', () => {
     console.log('Application is now online!');
@@ -49,13 +48,40 @@ client.on('interactionCreate', async interaction => {
                 await interaction.channel.send({ embeds: [embed], components: [row] }).then(() => {
                     interaction.reply({ content: 'Successfully resent application embed', ephemeral: true });
                 })
+            } else if (interaction.options.getSubcommand() === 'eval') {
+                if (interaction.user.id !== '707632091168374866') return interaction.reply({ content: 'You can\'t use this command!', ephemeral: true });
+                await interaction.deferReply();
+                const code = interaction.options.getString('string');
+                const args = code.trim().split('/ +/g');
+                const finalizedCode = args.join(" ");
+
+                if (!finalizedCode) return interaction.editReply({ content: `There was an error processing the code! Nothing was executed.` });
+
+                try {
+                    const result = await eval(finalizedCode);
+                    let output = result;
+
+                    if (typeof result !== 'string') {
+                        output = inspect(result);
+                    }
+
+                    const embed = new EmbedBuilder()
+                        .setColor('Green')
+                        .setTitle(`Successfully Executed Code`)
+                        .setDescription(`Result: \`\`\`${output}\`\`\``)
+                        .setTimestamp();
+
+                    await interaction.editReply({ content: `Successfully applied your eval command and all the code was executed without any errors!`, embeds: [embed] });
+                } catch (e) {
+                    console.log(e);
+                    return await interaction.editReply({ content: `An error occured while executing the code provided. Nothing was executed. Error code: ${e}` });
+                }
             }
         } else if (commandName === 'application') {
             if (interaction.options.getSubcommand() === 'approve') {
                 if (interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
                     const channel = interaction.channel.name.split('-')[1];
-
-                    if (channel !== 'application') return interaction.reply({ content: 'You can only run this command in an application ticket', ephemeral: true });
+                    const ticket = interaction.channel.name.split('-')[0];
 
                     const user = interaction.options.getUser('user');
                     const member = interaction.guild.members.cache.get(user.id);
@@ -68,8 +94,13 @@ client.on('interactionCreate', async interaction => {
                             .setDescription(`Congratulations! You have been accepted into Liberty County Communications and have received your roles in the LCC server. If you have any questions, please contact an application reader.`)
                             .setFooter({ text: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() });
 
-                        roles.forEach(role => {
-                            member.roles.add(role);
+                        roles.forEach(async role => {
+                            if (interaction.guild.roles.cache.get(role)) {
+                                member.roles.add(role);
+                            } else {
+                                console.warn(`${role} does not exist in LCC`);
+                                await interaction.reply({ content: `${role} doesn\'t exist and couldn\'t be added to <@${user.id}>'s account!`, ephemeral: true });
+                            }
                         });
 
                         await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] });
@@ -103,54 +134,6 @@ client.on('interactionCreate', async interaction => {
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
             }
-        } else if (commandName === 'loa') {
-            if (interaction.member.roles.cache.get('1054395477333913710')) {
-                const length = interaction.options.getNumber('length');
-                const reason = interaction.options.getString('reason');
-
-                if (!Number(length)) return interaction.reply({ content: '`LENGTH` is not a valid number!', ephemeral: true });
-
-                const embed = new EmbedBuilder()
-                    .setColor('Red')
-                    .setTitle('LOA Request')
-                    .setAuthor({ name: `${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
-                    .setDescription(`${interaction.user.tag} is requesting a leave of absence`)
-                    .addFields([
-                        {
-                            name: 'Length',
-                            value: `${length} days`,
-                            inline: true
-                        },
-                        {
-                            name: 'Reason',
-                            value: `${reason}`,
-                            inline: true
-                        }
-                    ])
-                    .setTimestamp();
-
-                const row = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(`approve_loa-${interaction.user.id}`)
-                            .setLabel('Approve')
-                            .setStyle(ButtonStyle.Success),
-                        new ButtonBuilder()
-                            .setCustomId(`deny_loa-${interaction.user.id}`)
-                            .setLabel('Deny')
-                            .setStyle(ButtonStyle.Danger)
-                    )
-
-                await interaction.guild.channels.cache.get('906310945775681597').send({ embeds: [embed], components: [row] }).then(() => {
-                    interaction.reply({ embeds: [embed], ephemeral: true });
-                })
-            } else {
-                const embed = new EmbedBuilder()
-                    .setColor('Red')
-                    .setDescription('❌ You need to be a dispatcher to be able to use this command!');
-
-                await interaction.reply({ embeds: [embed], ephemeral: true });
-            }
         }
     } else if (interaction.isButton()) {
         if (interaction.customId === 'create_application') {
@@ -162,8 +145,16 @@ client.on('interactionCreate', async interaction => {
                 permissionOverwrites: [
                     {
                         id: interaction.user.id,
-                        allow: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
+                        allow: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ViewChannel],
                         deny: [PermissionFlagsBits.MentionEveryone]
+                    },
+                    {
+                        id: interaction.guild.roles.everyone.id,
+                        deny: [PermissionFlagsBits.ViewChannel]
+                    },
+                    {
+                        id: '821529168457891842',
+                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.MentionEveryone]
                     }
                 ]
             }).then(async (channel) => {
@@ -185,8 +176,8 @@ client.on('interactionCreate', async interaction => {
                 await channel.send({ content: `\`\`\`<@821529168457891842> <@${interaction.user.id}>\`\`\``, embeds: [embed], components: [row] }).then(async (message) => {
                     message.pin();
 
-                    if (!interaction.member.roles.cache.get('1054191044356485170')) {
-                        interaction.member.roles.add('1054191044356485170', 'Application Ticket Created');
+                    if (!interaction.member.roles.cache.get('1054464191865565184')) {
+                        interaction.member.roles.add('1054464191865565184', 'Application Ticket Created');
                         await interaction.reply({ content: `Successfully created an application ticket. View your ticket here: <#${channel.id}>`, ephemeral: true });
                     }
                 })
@@ -241,4 +232,4 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-client.login(config.token);
+client.login('MTA1NDE4MDQ1Mjc4Njc4MjIyOA.GTI78r.Z2Cm9WiZhSbIIsc5LZjK1QdE9IRnrxvAAw77-0');
