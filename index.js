@@ -5,6 +5,8 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const fs = require('fs');
 const config = require('./config.json');
 
+// Main Code
+
 client.once('ready', () => {
     console.log('Application is now online!');
 

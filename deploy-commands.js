@@ -2,6 +2,8 @@ const { SlashCommandBuilder, Routes, PermissionFlagsBits } = require('discord.js
 const { REST } = require('@discordjs/rest');
 const config = require('./config.json');
 
+// Main Code
+
 const commands = [
     new SlashCommandBuilder().setName('ping').setDescription('Replies with bot statistics').setDMPermission(false),
     new SlashCommandBuilder().setName('developer').setDescription('Developer Options').addSubcommand(option => option.setName('resend_application_ticket').setDescription('Resends the application ticket maker to the channel this command was used in')).addSubcommand(option => option.setName('eval').setDescription('Evaluates a string of code').addStringOption(option => option.setName('string').setDescription('Line of code to evaluate').setMinLength(5).setRequired(true))),
