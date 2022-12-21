@@ -4,6 +4,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
 const fs = require('fs');
 const config = require('./config.json');
+const { inspect } = require('util');
 
 // Main Code
 
@@ -97,16 +98,17 @@ client.on('interactionCreate', async interaction => {
                             .setDescription(`Congratulations! You have been accepted into Liberty County Communications and have received your roles in the LCC server. If you have any questions, please contact an application reader.`)
                             .setFooter({ text: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() });
 
-                        roles.forEach(async role => {
-                            if (interaction.guild.roles.cache.get(role)) {
-                                member.roles.add(role);
-                            } else {
-                                console.warn(`${role} does not exist in LCC`);
-                                await interaction.reply({ content: `${role} doesn\'t exist and couldn\'t be added to <@${user.id}>'s account!`, ephemeral: true });
-                            }
+                        member.roles.remove('793320736306757642').then(async () => {
+                            roles.forEach(async role => {
+                                if (interaction.guild.roles.cache.get(role)) {
+                                    member.roles.add(role);
+                                } else {
+                                    console.warn(`${role} does not exist in LCC`);
+                                    await interaction.reply({ content: `${role} doesn\'t exist and couldn\'t be added to <@${user.id}>'s account!`, ephemeral: true });
+                                }
+                            });
+                            await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] });
                         });
-
-                        await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] });
                     }
                 } else {
                     const embed = new EmbedBuilder()
