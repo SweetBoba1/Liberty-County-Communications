@@ -145,7 +145,7 @@ client.on('interactionCreate', async interaction => {
             if (interaction.member.roles.cache.get('1054464191865565184')) return interaction.reply({ content: 'You already have a ticket open!', ephemeral: true });
 
             interaction.guild.channels.create({
-                name: `${interaction.user.discriminator}-application`,
+                name: `application-${interaction.user.discriminator}`,
                 parent: '761760921701842964',
                 permissionOverwrites: [
                     {
@@ -178,7 +178,7 @@ client.on('interactionCreate', async interaction => {
                             .setStyle(ButtonStyle.Danger)
                     );
 
-                await channel.send({ content: `\`\`\`<@821529168457891842> <@${interaction.user.id}>\`\`\``, embeds: [embed], components: [row] }).then(async (message) => {
+                await channel.send({ content: `<@&821529168457891842> <@${interaction.user.id}>`, embeds: [embed], components: [row] }).then(async (message) => {
                     message.pin();
 
                     if (!interaction.member.roles.cache.get('1054464191865565184')) {
