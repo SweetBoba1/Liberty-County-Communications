@@ -3,12 +3,67 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
 const fs = require('fs');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 const config = require('./config.json');
 const { inspect } = require('util');
 
+/*
+const uri = `${config.data_uri}`;
+const data_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+async function open_db() {
+    try {
+        await data_client.connect().then(() => {
+            console.log('Client connection succeeded');
+        })
+
+    } catch (err) {
+        console.log(`${err}`);
+    } finally {
+        data_client.close();
+    }
+}
+
+async function createTicketEntry(entry) {
+    try {
+        await data_client.connect();
+        const result = await data_client.db('lcc').collection('tickets').insertOne({ entry });
+        console.log(`Success`);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function locateTicketEntry(entry) {
+    try {
+        await data_client.connect();
+        const result = await data_client.db('lcc').collection('tickets').findOne(entry);
+
+        if (result) {
+            return result;
+        } else {
+            return "Unknown author";
+        }
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function deleteTicketEntry(entry) {
+    try {
+        await data_client.connect();
+        const result = await data_client.db('lcc').collection('tickets').deleteOne({ entry });
+        console.log(`Deleted entry successfully`);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+*/
+
 // Main Code
 
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log('Application is now online!');
 
     client.user.setPresence({
@@ -139,6 +194,31 @@ client.on('interactionCreate', async interaction => {
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
             }
+        } else if (commandName === 'loa') {
+            if (interaction.member.roles.cache.get('791947523132227614')) {
+                const user = interaction.options.getUser('user');
+                const member = interaction.guild.members.cache.get(user.id);
+
+                if (member) {
+                    if (member.roles.cache.get('762477490362253342')) {
+                        member.roles.remove('762477490362253342').then(async () => {
+                            member.roles.add('774123336166801428');
+                            await interaction.reply({ content: `Successfully updated ${user.tag}'s roles`, ephemeral: true });
+                        });
+                    } else {
+                        member.roles.add('774123336166801428');
+                        await interaction.reply({ content: `Successfully updated ${user.tag}'s roles`, ephemeral: true });
+                    }
+                } else {
+                    await interaction.reply({ content: `${user.tag} is not in this server!`, ephemeral: true });
+                }
+            } else {
+                const embed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setDescription('❌ You don\'t have permission to use this command');
+
+                await interaction.reply({ embeds: [embed], ephemeral: true });
+            }
         }
     } else if (interaction.isButton()) {
         if (interaction.customId === 'create_application') {
@@ -173,21 +253,22 @@ client.on('interactionCreate', async interaction => {
                 const row = new ActionRowBuilder()
                     .addComponents(
                         new ButtonBuilder()
-                            .setCustomId(`close_ticket-${interaction.user.id}`)
+                            .setCustomId(`close_ticket`)
                             .setLabel('Close')
                             .setStyle(ButtonStyle.Danger)
                     );
 
-                await channel.send({ content: `<@&821529168457891842> <@${interaction.user.id}>`, embeds: [embed], components: [row] }).then(async (message) => {
+                await channel.send({ content: `\`\`\`<@&821529168457891842> <@${interaction.user.id}>\`\`\``, embeds: [embed], components: [row] }).then(async (message) => {
                     message.pin();
 
                     if (!interaction.member.roles.cache.get('1054464191865565184')) {
                         interaction.member.roles.add('1054464191865565184', 'Application Ticket Created');
                         await interaction.reply({ content: `Successfully created an application ticket. View your ticket here: <#${channel.id}>`, ephemeral: true });
                     }
-                })
+                });
             })
-        } else if (interaction.customId.startsWith('close_ticket')) {
+
+        } else if (interaction.customId === 'close_ticket') {
             if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
                 const embed = new EmbedBuilder()
                     .setColor('Red')
@@ -195,44 +276,94 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });
             }
-            const applicant = interaction.customId.split('-')[1];
-            let collection = new Collection();
-            let channel_messages = await interaction.channel.messages.fetch({ limit: 100 });
-            collection = collection.concat(channel_messages);
 
-            while (channel_messages.size === 100) {
-                let lastMessageId = channel_messages.lastKey();
-                channel_messages = await interaction.channel.messages.fetch({ limit: 100, before: lastMessageId });
+            const embed = new EmbedBuilder()
+                .setColor('White')
+                .setDescription(`⏳ Are you sure you want to close ${interaction.channel.name}?`);
 
-                if (channel_messages) {
-                    collection = collection.concat(channel_messages);
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`confirm_close-${interaction.user.id}`)
+                        .setLabel('Close')
+                        .setStyle(ButtonStyle.Danger),
+
+                    new ButtonBuilder()
+                        .setCustomId('cancel_close')
+                        .setLabel('Cancel')
+                        .setStyle(ButtonStyle.Secondary)
+                );
+
+            await interaction.reply({ embeds: [embed], components: [row] });
+        } else if (interaction.customId.startsWith('confirm_close')) {
+            const moderator = interaction.customId.split('-')[1];
+            const member = interaction.guild.members.cache.get(moderator);
+
+            if (member) {
+                if (!member.roles.cache.get('821529168457891842')) {
+                    const embed = new EmbedBuilder()
+                        .setColor('Red')
+                        .setDescription('❌ You can\'t close this ticket!');
+
+                    await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
+
+                await interaction.reply({ content: `This feature isn't available yet! Please delete the channel manually if you wish to remove it.`, ephemeral: true });
+
+                /* let result = await locateTicketEntry({ channelID: `${interaction.channel.id}` });
+                console.log(result);
+
+                const author = client.users.cache.get(result.id);
+
+                if (author && result !== 'Unknown Author') {
+                    const log = new EmbedBuilder()
+                        .setColor('White')
+                        .setAuthor({ name: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() })
+                        .setTitle(`Ticket log | ${interaction.channel.name}`)
+                        .setDescription(`Application ticket closed by ${interaction.user.tag} (${interaction.user.id})`)
+                        .addFields([
+                            {
+                                name: 'Author',
+                                value: `${author.tag} (${author.id})`,
+                                inline: true
+                            }
+                        ])
+                        .setTimestamp();
+
+                    await interaction.guild.channels.cache.get('851136052282130434').send({ embeds: [log] }).then(async () => {
+                        interaction.reply({ content: 'Successfully saved the ticket! Deleting the ticket in 5 seconds...' });
+                        interaction.message.edit({ components: [] });
+                        setTimeout(() => {
+                            interaction.channel.delete();
+                        }, 5000);
+                    })
+                } else if (result === 'Unknown Author') {
+                    const log = new EmbedBuilder()
+                        .setColor('Yellow')
+                        .setAuthor({ name: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() })
+                        .setTitle(`Ticket log | ${interaction.channel.name}`)
+                        .setDescription(`Application ticket closed by ${interaction.user.tag} (${interaction.user.id})`)
+                        .addFields([
+                            {
+                                name: 'Author',
+                                value: `Unknown author`,
+                                inline: true
+                            }
+                        ])
+                        .setTimestamp();
+
+                    await interaction.guild.channels.cache.get('851136052282130434').send({ embeds: [log] }).then(async () => {
+                        interaction.reply({ content: 'Successfully saved the ticket! Deleting the ticket in 5 seconds...' });
+                        interaction.message.edit({ components: [] });
+                        setTimeout(() => {
+                            interaction.channel.delete();
+                        }, 5000);
+                    })
+                }
+                */
             }
-
-            let messages = collection.reverse();
-            await interaction.reply({ content: 'Please wait...' }).then(async () => {
-                await messages.forEach(message => {
-                    fs.appendFile(`${interaction.channel.name}-log.txt`, `${message.author.username}: ${message.content}\n`, function (err) {
-                        if (err) throw err;
-                    })
-                });
-
-                await interaction.guild.channels.cache.get('851136052282130434').send({ files: [`./${interaction.channel.name}-log.txt`] }).then(() => {
-                    fs.unlink(`${interaction.channel.name}-log.txt`, async function (err) {
-                        if (err) throw err;
-                        await interaction.editReply({ content: 'Successfully saved the ticket! Deleting this ticket in 5 seconds...' }).then(() => {
-                            setTimeout(() => {
-                                interaction.channel.delete();
-                                let member = interaction.guild.members.cache.get(applicant);
-
-                                if (member) {
-                                    member.roles.remove('1054464191865565184', 'Application Ticket Closed')
-                                }
-                            }, 5000);
-                        })
-                    })
-                })
-            })
+        } else if (interaction.customId === 'cancel_close') {
+            await interaction.message.delete();
         }
     }
 });
