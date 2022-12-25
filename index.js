@@ -200,14 +200,21 @@ client.on('interactionCreate', async interaction => {
                 const member = interaction.guild.members.cache.get(user.id);
 
                 if (member) {
-                    if (member.roles.cache.get('762477490362253342')) {
-                        member.roles.remove('762477490362253342').then(async () => {
-                            member.roles.add('774123336166801428');
-                            await interaction.reply({ content: `Successfully updated ${user.tag}'s roles`, ephemeral: true });
+                    if (member.roles.cache.get('774123336166801428')) {
+                        member.roles.remove('774123336166801428').then(async () => {
+                            member.roles.add('762477490362253342');
+                            await interaction.reply({ content: `Successfully updated ${user.tag}'s roles (removed LOA)!`, ephemeral: true });
                         });
                     } else {
-                        member.roles.add('774123336166801428');
-                        await interaction.reply({ content: `Successfully updated ${user.tag}'s roles`, ephemeral: true });
+                        if (member.roles.cache.get('762477490362253342')) {
+                            member.roles.remove('762477490362253342').then(async () => {
+                                member.roles.add('774123336166801428');
+                                await interaction.reply({ content: `Successfully updated ${user.tag}'s roles (added LOA)!`, ephemeral: true });
+                            });
+                        } else {
+                            member.roles.add('774123336166801428');
+                            await interaction.reply({ content: `Successfully updated ${user.tag}'s roles (added LOA)!`, ephemeral: true });
+                        }
                     }
                 } else {
                     await interaction.reply({ content: `${user.tag} is not in this server!`, ephemeral: true });
