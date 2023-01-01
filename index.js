@@ -3,63 +3,8 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
 const fs = require('fs');
-const { MongoClient, ServerApiVersion } = require('mongodb');
 const config = require('./config.json');
 const { inspect } = require('util');
-
-/*
-const uri = `${config.data_uri}`;
-const data_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-
-async function open_db() {
-    try {
-        await data_client.connect().then(() => {
-            console.log('Client connection succeeded');
-        })
-
-    } catch (err) {
-        console.log(`${err}`);
-    } finally {
-        data_client.close();
-    }
-}
-
-async function createTicketEntry(entry) {
-    try {
-        await data_client.connect();
-        const result = await data_client.db('lcc').collection('tickets').insertOne({ entry });
-        console.log(`Success`);
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-async function locateTicketEntry(entry) {
-    try {
-        await data_client.connect();
-        const result = await data_client.db('lcc').collection('tickets').findOne(entry);
-
-        if (result) {
-            return result;
-        } else {
-            return "Unknown author";
-        }
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-async function deleteTicketEntry(entry) {
-    try {
-        await data_client.connect();
-        const result = await data_client.db('lcc').collection('tickets').deleteOne({ entry });
-        console.log(`Deleted entry successfully`);
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-*/
 
 // Main Code
 
@@ -67,7 +12,13 @@ client.once('ready', async () => {
     console.log('Application is now online!');
 
     client.user.setPresence({
-        status: 'online'
+        status: 'online',
+        activities: [
+            {
+                name: 'Happy New Years LCC! #2023',
+                type: ActivityType.Listening
+            }
+        ]
     });
 });
 
@@ -265,7 +216,7 @@ client.on('interactionCreate', async interaction => {
                             .setStyle(ButtonStyle.Danger)
                     );
 
-                await channel.send({ content: `\`\`\`<@&821529168457891842> <@${interaction.user.id}>\`\`\``, embeds: [embed], components: [row] }).then(async (message) => {
+                await channel.send({ content: `<@&821529168457891842> <@${interaction.user.id}>`, embeds: [embed], components: [row] }).then(async (message) => {
                     message.pin();
 
                     if (!interaction.member.roles.cache.get('1054464191865565184')) {
@@ -316,58 +267,6 @@ client.on('interactionCreate', async interaction => {
                 }
 
                 await interaction.reply({ content: `This feature isn't available yet! Please delete the channel manually if you wish to remove it.`, ephemeral: true });
-
-                /* let result = await locateTicketEntry({ channelID: `${interaction.channel.id}` });
-                console.log(result);
-
-                const author = client.users.cache.get(result.id);
-
-                if (author && result !== 'Unknown Author') {
-                    const log = new EmbedBuilder()
-                        .setColor('White')
-                        .setAuthor({ name: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() })
-                        .setTitle(`Ticket log | ${interaction.channel.name}`)
-                        .setDescription(`Application ticket closed by ${interaction.user.tag} (${interaction.user.id})`)
-                        .addFields([
-                            {
-                                name: 'Author',
-                                value: `${author.tag} (${author.id})`,
-                                inline: true
-                            }
-                        ])
-                        .setTimestamp();
-
-                    await interaction.guild.channels.cache.get('851136052282130434').send({ embeds: [log] }).then(async () => {
-                        interaction.reply({ content: 'Successfully saved the ticket! Deleting the ticket in 5 seconds...' });
-                        interaction.message.edit({ components: [] });
-                        setTimeout(() => {
-                            interaction.channel.delete();
-                        }, 5000);
-                    })
-                } else if (result === 'Unknown Author') {
-                    const log = new EmbedBuilder()
-                        .setColor('Yellow')
-                        .setAuthor({ name: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() })
-                        .setTitle(`Ticket log | ${interaction.channel.name}`)
-                        .setDescription(`Application ticket closed by ${interaction.user.tag} (${interaction.user.id})`)
-                        .addFields([
-                            {
-                                name: 'Author',
-                                value: `Unknown author`,
-                                inline: true
-                            }
-                        ])
-                        .setTimestamp();
-
-                    await interaction.guild.channels.cache.get('851136052282130434').send({ embeds: [log] }).then(async () => {
-                        interaction.reply({ content: 'Successfully saved the ticket! Deleting the ticket in 5 seconds...' });
-                        interaction.message.edit({ components: [] });
-                        setTimeout(() => {
-                            interaction.channel.delete();
-                        }, 5000);
-                    })
-                }
-                */
             }
         } else if (interaction.customId === 'cancel_close') {
             await interaction.message.delete();
