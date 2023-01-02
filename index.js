@@ -177,6 +177,34 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });
             }
+        } else if (commandName === 'session') {
+            if (interaction.member.roles.cache.get('791947523132227614') || interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                const embed = new EmbedBuilder()
+                    .setColor('White')
+                    .setDescription('React with 🚓, 🚒, and 📱 accordingly if you plan to attend!');
+
+                const sessionChannel = interaction.guild.channels.cache.get('794900599485104168');
+
+                if (sessionChannel) {
+                    await sessionChannel.send({ content: '<@&905201819674890350> <@&905201820270481429>', embeds: [embed] }).then(async (message) => {
+                        const reactions = ['🚓', '🚒', '📱'];
+
+                        reactions.forEach(async reaction => {
+                            await message.react(reaction);
+                        });
+
+                        await interaction.reply({ content: 'Success!', ephemeral: true });
+                    })
+                } else {
+                    await interaction.reply({ content: 'The session channel couldn\'t be found!', ephemeral: true });
+                }
+            } else {
+                const embed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setDescription('❌ You don\'t have permission to use this command');
+
+                await interaction.reply({ embeds: [embed], ephemeral: true });
+            }
         }
     } else if (interaction.isButton()) {
         if (interaction.customId === 'create_application') {
