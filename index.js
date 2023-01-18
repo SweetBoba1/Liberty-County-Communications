@@ -1,4 +1,3 @@
-const { NumberValidator } = require('@sapphire/shapeshift');
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ChannelType, PermissionsBitField, InteractionType, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, AuditLogEvent, Collection, PermissionFlagsBits } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
@@ -16,7 +15,13 @@ client.once('ready', async () => {
         .addFields([
             {
                 name: 'Update Log',
-                value: `${config.client_info.update_log}`
+                value: `${config.client_info.update_log}`,
+                inline: true
+            },
+            {
+                name: 'Full Update Log',
+                value: `[Github Repository](https://github.com/developer-league/Liberty-County-Communications)`,
+                inline: true
             }
         ])
         .setTimestamp();
