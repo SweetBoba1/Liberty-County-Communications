@@ -6,17 +6,30 @@ const fs = require('fs');
 const config = require('./config.json');
 const { inspect } = require('util');
 
-// Main Code
-
 client.once('ready', async () => {
     console.log('Application is now online!');
+
+    const restartEmbed = new EmbedBuilder()
+        .setColor('Red')
+        .setTitle('Client Restart')
+        .setDescription(`<@${client.user.id}> has restarted and new updates have been pushed.\nClient version: ${config.client_info.version}`)
+        .addFields([
+            {
+                name: 'Update Log',
+                value: `${config.client_info.update_log}`
+            }
+        ])
+        .setTimestamp();
+
+
+    client.guilds.cache.get('761729236297318412').channels.cache.get('787106644064469012').send({ embeds: [restartEmbed] });
 
     client.user.setPresence({
         status: 'online',
         activities: [
             {
-                name: 'Happy New Years LCC! #2023',
-                type: ActivityType.Listening
+                name: 'Watching over LCC',
+                type: ActivityType.Watching
             }
         ]
     });
@@ -33,58 +46,52 @@ client.on('interactionCreate', async interaction => {
 
             await interaction.reply({ embeds: [embed], ephemeral: true });
         } else if (commandName === 'developer') {
-            if (interaction.user.id !== '707632091168374866') {
-                const embed = new EmbedBuilder()
-                    .setColor('Red')
-                    .setDescription('❌ You don\'t have permission to use this command');
-
-                return interaction.reply({ embeds: [embed], ephemeral: true });
-            }
-            if (interaction.options.getSubcommand() === 'resend_application_ticket') {
-                const embed = new EmbedBuilder()
-                    .setColor('White')
-                    .setAuthor({ name: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() })
-                    .setTitle('Create an Application')
-                    .setDescription('Click the button below to create an application ticket!\nDisclaimer: *Creating a ticket and then leaving will result in moderation action!*');
-
-                const row = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId('create_application')
-                            .setLabel('Create Application')
-                            .setStyle(ButtonStyle.Success)
-                    );
-
-                await interaction.channel.send({ embeds: [embed], components: [row] }).then(() => {
-                    interaction.reply({ content: 'Successfully resent application embed', ephemeral: true });
-                })
-            } else if (interaction.options.getSubcommand() === 'eval') {
-                if (interaction.user.id !== '707632091168374866') return interaction.reply({ content: 'You can\'t use this command!', ephemeral: true });
-                await interaction.deferReply();
-                const code = interaction.options.getString('string');
-                const args = code.trim().split('/ +/g');
-                const finalizedCode = args.join(" ");
-
-                if (!finalizedCode) return interaction.editReply({ content: `There was an error processing the code! Nothing was executed.` });
-
-                try {
-                    const result = await eval(finalizedCode);
-                    let output = result;
-
-                    if (typeof result !== 'string') {
-                        output = inspect(result);
-                    }
-
+            if (interaction.user.id === '707632091168374866' || interaction.user.id === '312767742677876746' || interaction.user.id === '467988490722869248') {
+                if (interaction.options.getSubcommand() === 'resend_application_ticket') {
                     const embed = new EmbedBuilder()
-                        .setColor('Green')
-                        .setTitle(`Successfully Executed Code`)
-                        .setDescription(`Result: \`\`\`${output}\`\`\``)
-                        .setTimestamp();
+                        .setColor('White')
+                        .setAuthor({ name: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() })
+                        .setTitle('Create an Application')
+                        .setDescription('Click the button below to create an application ticket!\nDisclaimer: *Creating a ticket and then leaving will result in moderation action!*');
 
-                    await interaction.editReply({ content: `Successfully applied your eval command and all the code was executed without any errors!`, embeds: [embed] });
-                } catch (e) {
-                    console.log(e);
-                    return await interaction.editReply({ content: `An error occured while executing the code provided. Nothing was executed. Error code: ${e}` });
+                    const row = new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId('create_application')
+                                .setLabel('Create Application')
+                                .setStyle(ButtonStyle.Success)
+                        );
+
+                    await interaction.channel.send({ embeds: [embed], components: [row] }).then(() => {
+                        interaction.reply({ content: 'Successfully resent application embed', ephemeral: true });
+                    })
+                } else if (interaction.options.getSubcommand() === 'eval') {
+                    await interaction.deferReply();
+                    const code = interaction.options.getString('string');
+                    const args = code.trim().split('/ +/g');
+                    const finalizedCode = args.join(" ");
+
+                    if (!finalizedCode) return interaction.editReply({ content: `There was an error processing the code! Nothing was executed.` });
+
+                    try {
+                        const result = await eval(finalizedCode);
+                        let output = result;
+
+                        if (typeof result !== 'string') {
+                            output = inspect(result);
+                        }
+
+                        const embed = new EmbedBuilder()
+                            .setColor('Green')
+                            .setTitle(`Successfully Executed Code`)
+                            .setDescription(`Result: \`\`\`${output}\`\`\``)
+                            .setTimestamp();
+
+                        await interaction.editReply({ content: `Successfully applied your eval command and all the code was executed without any errors!`, embeds: [embed] });
+                    } catch (e) {
+                        console.log(e);
+                        return await interaction.editReply({ content: `An error occured while executing the code provided. Nothing was executed. Error code: ${e}` });
+                    }
                 }
             }
         } else if (commandName === 'application') {
@@ -105,15 +112,19 @@ client.on('interactionCreate', async interaction => {
                             .setFooter({ text: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() });
 
                         member.roles.remove('793320736306757642').then(async () => {
-                            roles.forEach(async role => {
-                                if (interaction.guild.roles.cache.get(role)) {
-                                    member.roles.add(role);
-                                } else {
-                                    console.warn(`${role} does not exist in LCC`);
-                                    await interaction.reply({ content: `${role} doesn\'t exist and couldn\'t be added to <@${user.id}>'s account!`, ephemeral: true });
-                                }
+                            member.roles.remove('1054464191865565184').then(async () => {
+                                roles.forEach(async role => {
+                                    if (interaction.guild.roles.cache.get(role)) {
+                                        member.roles.add(role);
+                                    } else {
+                                        console.warn(`${role} does not exist in LCC`);
+                                        await interaction.reply({ content: `${role} doesn\'t exist and couldn\'t be added to <@${user.id}>'s account!`, ephemeral: true });
+                                    }
+                                });
                             });
-                            await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] });
+                            await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] }).then(async () => {
+                                await interaction.reply({ content: `<:SRPYes:869027783827914834> Accepted ${user.tag}`, ephemeral: true });
+                            });
                         });
                     }
                 } else {
@@ -135,7 +146,9 @@ client.on('interactionCreate', async interaction => {
                             .setDescription(`Unfortunately, you have failed your application. You may reapply in 7 days after this message is sent.`)
                             .setFooter({ text: 'Liberty County Communications', iconURL: client.user.displayAvatarURL() });
 
-                        await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] });
+                        await interaction.channel.send({ content: `<@${user.id}>`, embeds: [embed] }).then(async () => {
+                            await interaction.reply({ content: `<:SRPYes:869027783827914834> Denied ${user.tag}`, ephemeral: true });
+                        });
                     }
                 } else {
                     const embed = new EmbedBuilder()
@@ -294,7 +307,22 @@ client.on('interactionCreate', async interaction => {
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
 
-                await interaction.reply({ content: `This feature isn't available yet! Please delete the channel manually if you wish to remove it.`, ephemeral: true });
+                const ticket_transcript = interaction.guild.channels.cache.get('851136052282130434');
+
+                if (ticket_transcript) {
+                    const embed = new EmbedBuilder()
+                        .setColor('Green')
+                        .setTitle('Ticket Transcript')
+                        .setDescription(`Ticket ${interaction.channel.name} was closed by ${interaction.user.tag} (${interaction.user.id})`)
+                        .setTimestamp();
+
+                    await ticket_transcript.send({ embeds: [embed] }).then(() => {
+                        interaction.channel.send({ content: 'Deleting ticket in 5 seconds...' });
+                        setTimeout(async () => {
+                            interaction.channel.delete();
+                        }, 5000);
+                    });
+                }
             }
         } else if (interaction.customId === 'cancel_close') {
             await interaction.message.delete();
