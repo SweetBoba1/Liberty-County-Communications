@@ -1,9 +1,11 @@
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ChannelType, PermissionsBitField, InteractionType, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, AuditLogEvent, Collection, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ChannelType, PermissionsBitField, InteractionType, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, AuditLogEvent, Collection, PermissionFlagsBits, StringSelectMenuBuilder } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildBans, GatewayIntentBits.GuildWebhooks, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["CHANNEL"] });
 const fs = require('fs');
 const config = require('./config.json');
 const { inspect } = require('util');
+const noblox = require('noblox.js');
+const groupId = "5285088"
 
 client.once('ready', async () => {
     console.log('Application is now online!');
@@ -27,7 +29,7 @@ client.once('ready', async () => {
         .setTimestamp();
 
 
-    client.guilds.cache.get('761729236297318412').channels.cache.get('787106644064469012').send({ embeds: [restartEmbed] });
+    await client.guilds.cache.get('761729236297318412').channels.cache.get('787106644064469012').send({ embeds: [restartEmbed] });
 
     client.user.setPresence({
         status: 'online',
@@ -135,7 +137,7 @@ client.on('interactionCreate', async interaction => {
                 } else {
                     const embed = new EmbedBuilder()
                         .setColor('Red')
-                        .setDescription('❌ You don\'t have permission to use this command');
+                        .setDescription('<:SRPNo:869026520197373962> You don\'t have permission to use this command');
 
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
@@ -158,7 +160,7 @@ client.on('interactionCreate', async interaction => {
                 } else {
                     const embed = new EmbedBuilder()
                         .setColor('Red')
-                        .setDescription('❌ You don\'t have permission to use this command');
+                        .setDescription('<:SRPNo:869026520197373962> You don\'t have permission to use this command');
 
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
@@ -191,7 +193,7 @@ client.on('interactionCreate', async interaction => {
             } else {
                 const embed = new EmbedBuilder()
                     .setColor('Red')
-                    .setDescription('❌ You don\'t have permission to use this command');
+                    .setDescription('<:SRPNo:869026520197373962> You don\'t have permission to use this command');
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });
             }
@@ -219,9 +221,88 @@ client.on('interactionCreate', async interaction => {
             } else {
                 const embed = new EmbedBuilder()
                     .setColor('Red')
-                    .setDescription('❌ You don\'t have permission to use this command');
+                    .setDescription('<:SRPNo:869026520197373962> You don\'t have permission to use this command');
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });
+            }
+        } else if (commandName === 'rank') {
+            if (interaction.member.roles.cache.get('791947523132227614') || interaction.member.roles.cache.get('791951045348818984')) {
+                await interaction.deferReply({ ephemeral: true });
+                const username = interaction.options.getString('username');
+                let robloxUser;
+
+                await noblox.getIdFromUsername(username).then(response => {
+                    robloxUser = response;
+                }).catch(e => {
+                    const embed = new EmbedBuilder()
+                        .setColor('Red')
+                        .setDescription('<:SRPNo:869026520197373962> User does not exist!');
+
+                    return interaction.editReply({ embeds: [embed] });
+                });
+
+                if (robloxUser) {
+                    let user = await noblox.getPlayerInfo(robloxUser);
+
+                    if (user) {
+                        let thumbnail = await noblox.getPlayerThumbnail(robloxUser, '75x75', 'png', true, 'headshot');
+                        let currentRank = await noblox.getRankNameInGroup(groupId, robloxUser);
+
+                        if (thumbnail && currentRank) {
+                            const thumbstring = thumbnail.map(info => info.imageUrl);
+
+                            const embed = new EmbedBuilder()
+                                .setColor('Green')
+                                .setTitle('Change Rank')
+                                .setThumbnail(`${thumbstring}`)
+                                .setDescription(`Roblox user: \`${user.username}\`\nAccount age: \`${user.age} days\`\nCurrent Rank: \`${currentRank}\``);
+
+                            const row = new ActionRowBuilder()
+                                .addComponents(
+                                    new StringSelectMenuBuilder()
+                                        .setCustomId(`role_${robloxUser}`)
+                                        .setPlaceholder('Select a role')
+                                        .addOptions(
+                                            {
+                                                label: 'Probationary Dispatcher',
+                                                description: 'Probationary Dispatcher',
+                                                value: '2'
+                                            },
+                                            {
+                                                label: 'Dispatcher',
+                                                description: 'Dispatcher',
+                                                value: '5'
+                                            }
+                                        )
+                                );
+
+                            if (currentRank === 'Guest') {
+                                embed.setFooter({ text: 'User not in group - Can\'t change rank!' });
+                                interaction.editReply({ embeds: [embed] });
+                            } else {
+                                interaction.editReply({ embeds: [embed], components: [row] });
+                            }
+                        } else {
+                            const embed = new EmbedBuilder()
+                            .setColor('Red')
+                            .setDescription('<:SRPNo:869026520197373962> Error fetching user information!');
+
+                        interaction.editReply({ embeds: [embed] });
+                        }
+                    } else {
+                        const embed = new EmbedBuilder()
+                            .setColor('Red')
+                            .setDescription('<:SRPNo:869026520197373962> User does not exist!');
+
+                        interaction.editReply({ embeds: [embed] });
+                    }
+                }
+            } else {
+                const embed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setDescription('<:SRPNo:869026520197373962> You don\'t have permission to use this command');
+
+                interaction.editReply({ embeds: [embed] });
             }
         }
     } else if (interaction.isButton()) {
@@ -276,7 +357,7 @@ client.on('interactionCreate', async interaction => {
             if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
                 const embed = new EmbedBuilder()
                     .setColor('Red')
-                    .setDescription('❌ You can\'t close this ticket!');
+                    .setDescription('<:SRPNo:869026520197373962> You can\'t close this ticket!');
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });
             }
@@ -307,7 +388,7 @@ client.on('interactionCreate', async interaction => {
                 if (!member.roles.cache.get('821529168457891842')) {
                     const embed = new EmbedBuilder()
                         .setColor('Red')
-                        .setDescription('❌ You can\'t close this ticket!');
+                        .setDescription('<:SRPNo:869026520197373962> You can\'t close this ticket!');
 
                     await interaction.reply({ embeds: [embed], ephemeral: true });
                 }
@@ -331,6 +412,25 @@ client.on('interactionCreate', async interaction => {
             }
         } else if (interaction.customId === 'cancel_close') {
             await interaction.message.delete();
+        }
+    } else if (interaction.isStringSelectMenu()) {
+        if (interaction.customId.startsWith('role')) {
+            await interaction.deferReply({ ephemeral: true });
+            const choice = interaction.values[0];
+            const id = interaction.customId.split('_')[1];
+
+            noblox.changeRank(groupId, id, choice).then(async () => {
+                const embed = new EmbedBuilder()
+                    .setColor('Green')
+                    .setDescription(`<:SRPYes:869027783827914834> Success!`);
+                interaction.editReply({ embeds: [embed] });
+            }).catch(e => {
+                console.log(e);
+                const embed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setDescription(`<:SRPNo:869026520197373962> Action failed!`);
+                interaction.editReply({ embeds: [embed] });
+            })
         }
     }
 });

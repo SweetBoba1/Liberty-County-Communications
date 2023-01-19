@@ -10,6 +10,7 @@ const commands = [
     new SlashCommandBuilder().setName('application').setDescription('Application Options').setDMPermission(false).addSubcommand(option => option.setName('approve').setDescription('Approve an application').addUserOption(option => option.setName('user').setDescription('Please specity a user to accept').setRequired(true))).addSubcommand(option => option.setName('deny').setDescription('Denies an application').addUserOption(option => option.setName('user').setDescription('Please specify the user to deny').setRequired(true))),
     new SlashCommandBuilder().setName('loa').setDescription('Update the roles of a dispatcher who is on LOA').addUserOption(option => option.setName('user').setDescription('Please specify the dispatcher on LOA').setRequired(true)),
     new SlashCommandBuilder().setName('session').setDescription('Allows dispatchers to react if they plan to dispatch for the upcoming session'),
+    new SlashCommandBuilder().setName('rank').setDescription('Sets the members rank in the group').addStringOption(option => option.setName('username').setDescription('Roblox username of member you wish to edit the roles of').setMinLength(1).setRequired(true))
 ]
     .map(command => command.toJSON());
 
